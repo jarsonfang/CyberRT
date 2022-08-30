@@ -32,8 +32,8 @@ target_link_libraries(cyber_example_server
     ${TARGET_NAME}
 )
 
-add_executable(cyber_example_cilent client.cc proto/examples.pb.cc)
-target_link_libraries(cyber_example_cilent
+add_executable(cyber_example_client client.cc proto/examples.pb.cc)
+target_link_libraries(cyber_example_client
     ${TARGET_NAME}
 )
 
