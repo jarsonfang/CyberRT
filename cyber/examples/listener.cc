@@ -20,10 +20,8 @@
 
 void MessageCallback(
     const std::shared_ptr<apollo::cyber::examples::proto::Chatter>& msg) {
-  // AINFO << "Received message seq-> " << msg->seq();
-  // AINFO << "msgcontent->" << msg->content();
-    std::cout << "Received message seq-> " << msg->seq() << std::endl;
-    std::cout << "msgcontent->" << msg->content() << std::endl;
+  AINFO << "Received message seq-> " << msg->seq();
+  AINFO << "msgcontent->" << msg->content();
 }
 
 int main(int argc, char* argv[]) {

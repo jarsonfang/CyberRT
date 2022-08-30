@@ -1,4 +1,4 @@
-# Apollo(v7.0.0) Cyber 
+# Apollo(v7.0.0) Cyber
 
 ![CyberRT](./docs/CyberRT.gif)
 
@@ -13,7 +13,7 @@ sudo apt install libpoco-dev
 sudo apt install uuid-dev
 sudo apt install libncurses5-dev
 // required libpython3.x.so
-sudo apt install python3.6-dev 
+sudo apt install python3.6-dev
 pip3 install protobuf
 ```
 
@@ -37,14 +37,14 @@ sudo cp -r env/ /opt/cyber/env
 ```
 
 ```shell
-// bash 
+// bash
 source /opt/cyber/env/setup.bash
 
-// zsh 
+// zsh
 source /opt/cyber/env/setup.zsh
 ```
 
-3. generate protobuf
+3. generate protobuf (optional)
 
 ```shell
 /opt/cyber/env/bin/protoc -I=cyber/proto/ --cpp_out=cyber/proto --python_out=cyber/proto cyber/proto/*.proto
@@ -56,15 +56,15 @@ source /opt/cyber/env/setup.zsh
 
 ```shell
 mkdir build && cd build
-cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-make 
+cmake ..
+make
 ```
 
 5. run examples
 
 - pub/sub
 
-> talker 
+> talker
 
 ```shell
 source setup.bash
@@ -79,18 +79,18 @@ source setup.bash
 
 - server/client
 
-> server 
+> server
 
 ```shell
 source setup.bash
 ./cyber/examples/cyber_example_server
 ```
 
-> client 
+> client
 
 ```shell
 source setup.bash
-./cyber/examples/cyber_example_cilent
+./cyber/examples/cyber_example_client
 ```
 
 - component
@@ -104,7 +104,7 @@ cyber_launch start share/examples/common.launch
 
 ## #3 tools
 
-- channel 
+- channel
 
 > list
 
@@ -116,7 +116,7 @@ cyber_channel list
 // /apollo/test
 ```
 
-> echo 
+> echo
 ```shell
 source setup.bash
 cyber_channel echo /apollo/test
@@ -135,7 +135,7 @@ Commands:
 	cyber_channel type	print channel type
 ```
 
-- node 
+- node
 
 ```shell
 Commands:
@@ -143,7 +143,7 @@ Commands:
 	cyber_node info 	Print node info.
 ```
 
-- service 
+- service
 
 ```shell
 Commands:
@@ -151,22 +151,22 @@ Commands:
 	cyber_service info	print information about active service
 ```
 
-- launch 
+- launch
 
 ```shell
 cyber_launch start share/examples/common.launch
 ```
 
-- monitor 
+- monitor
 
 ```shell
 cyber_monitor
 ```
 
-- recorder 
+- recorder
 
 ```shell
-Commands: 
+Commands:
   	cyber_recorder info	Show information of an exist record.
 	cyber_recorder play	Play an exist record.
 	cyber_recorder record	Record same topic.
@@ -174,11 +174,11 @@ Commands:
 	cyber_recorder recover	Recover an exist record.
 ```
 
-## #4 打包安装 
+## #4 打包安装
 
 ```shell
 cmake -DCMAKE_INSTALL_PREFIX=安装路径 ..
-make 
+make
 make package
 sudo dpkg -i package/*.deb
 ```

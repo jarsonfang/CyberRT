@@ -9,3 +9,14 @@ LIBRARY_PATH=$_SETUP_PATH/lib:$LIBRARY_PATH
 CMAKE_PREFIX_PATH=$_SETUP_PATH:$CMAKE_PREFIX_PATH
 PKG_CONFIG_PATH=$_SETUP_PATH/lib/pkgconfig:$_SETUP_PATH/share/pkgconfig:$PKG_CONFIG_PATH
 export PATH LD_LIBRARY_PATH CMAKE_PREFIX_PATH PKG_CONFIG_PATH PYTHONPATH
+
+export CYBER_DOMAIN_ID=80
+export CYBER_IP=127.0.0.1
+
+# export GLOG_log_dir="${APOLLO_ROOT_DIR}/data/log"
+export GLOG_alsologtostderr=1
+export GLOG_colorlogtostderr=1
+export GLOG_minloglevel=0
+
+export sysmo_start=0
+
