@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.5.1)
 
 project(cyber VERSION 1.1.0)
+set(TARGET_NAME ${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 14)
-set(TARGET_NAME ${PROJECT_NAME})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CYBER_PYTHON_PATH "lib/python3.6/site-packages/cyber/python")
 set(CYBER_PYTHON_INTERNAL_PATH "${CYBER_PYTHON_PATH}/internal")
 set(CYBER_PYTHON_PROTOBUF_PATH "lib/python3.6/site-packages/cyber/proto")
@@ -20,17 +21,19 @@ find_package(PkgConfig REQUIRED)
 find_package(fastrtps REQUIRED)
 find_package(fastcdr REQUIRED)
 find_package(Poco REQUIRED COMPONENTS Foundation)
+
 pkg_check_modules(Protobuf REQUIRED protobuf)
 pkg_check_modules(Glog REQUIRED libglog)
 pkg_check_modules(Gflags REQUIRED gflags)
 
 include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
     ${fastcdr_INCLUDE_DIR}
     ${fastrtps_INCLUDE_DIR}
     ${Protobuf_INCLUDE_DIRS}
     ${Glog_INCLUDE_DIRS}
     ${Gflags_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/env/include
 )
 
 link_directories(
@@ -41,14 +44,36 @@ link_directories(
     ${Gflags_LIBRARY_DIRS}
 )
 
-aux_source_directory("cyber/proto/" CYBER_PROTO_SRCS)
+# compile .proto files
 
-file(GLOB CYBER_SRCS 
+set(PROTOC_EXECUTABLE "protoc")
+# set(PROTOC_EXECUTABLE ${Protobuf_PROTOC_EXECUTABLE})
+message("=== PROTOC_EXECUTABLE ==\n" ${PROTOC_EXECUTABLE})
+
+set(CYBER_PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cyber/proto)
+file(GLOB_RECURSE CYBER_PROTO_FILES "cyber/proto/*.proto")
+
+foreach(PROTO_FILE ${CYBER_PROTO_FILES})
+    execute_process(
+        COMMAND ${PROTOC_EXECUTABLE} ${PROTO_FILE}
+            --cpp_out=${CYBER_PROTO_DIR}
+            --python_out=${CYBER_PROTO_DIR}
+            -I ${CYBER_PROTO_DIR}
+        RESULT_VARIABLE PROTOC_RESULT)
+
+    if (NOT (${PROTOC_RESULT} EQUAL 0))
+        message(FATAL_ERROR "failed to compile proto file: ${PROTO_FILE}")
+    endif()
+endforeach()
+
+aux_source_directory(${CYBER_PROTO_DIR} CYBER_PROTO_SRCS)
+
+file(GLOB CYBER_SRCS
     "cyber/base/*.cc"
     "cyber/blocker/*.cc"
     "cyber/class_loader/*.cc"
     "cyber/class_loader/*/*.cc"
-    "cyber/common/*.cc" 
+    "cyber/common/*.cc"
     "cyber/component/*.cc"
     "cyber/croutine/*.cc"
     "cyber/croutine/*/*.cc"
@@ -67,19 +92,19 @@ file(GLOB CYBER_SRCS
     "cyber/service/*.cc"
     "cyber/service_discovery/*.cc"
     "cyber/service_discovery/*/*.cc"
-    "cyber/task/*.cc" 
+    "cyber/sysmo/*.cc"
+    "cyber/task/*.cc"
     "cyber/time/*.cc"
-    "cyber/timer/*.cc"	
+    "cyber/timer/*.cc"
     "cyber/transport/*.cc"
     "cyber/transport/*/*.cc"
     "cyber/*.cc"
-    "cyber/sysmo/*.cc"
 )
 
 list(FILTER CYBER_SRCS EXCLUDE REGEX .*test[.]cc)
 
 add_library(${TARGET_NAME} SHARED ${CYBER_PROTO_SRCS} ${CYBER_SRCS})
-target_link_libraries(${TARGET_NAME} 
+target_link_libraries(${TARGET_NAME}
     ${Glog_LIBRARIES}
     ${Gflags_LIBRARIES}
     ${Protobuf_LIBRARIES}
@@ -90,9 +115,9 @@ target_link_libraries(${TARGET_NAME}
     uuid
 )
 
-add_executable(mainboard 
+add_executable(mainboard
   cyber/mainboard/mainboard.cc
-  cyber/mainboard/module_argument.cc 
+  cyber/mainboard/module_argument.cc
   cyber/mainboard/module_controller.cc
 )
 target_link_libraries(mainboard
@@ -109,7 +134,7 @@ add_subdirectory(cyber/tools)
 # --------------------------------------------------------------
 #                      CPack
 # --------------------------------------------------------------
-# 打包方式 
+# 打包方式
 include(InstallRequiredSystemLibraries)
 if (APPLE)
 elseif (UNIX)
@@ -169,8 +194,9 @@ set(CPACK_PACKAGE_FILE_NAME   "lib${CPACK_PACKAGE_NAME}")
 set(CPACK_PACKAGE_FILE_NAME   "${CPACK_PACKAGE_FILE_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_PACKAGE_ARCHITECTURE}")
 
 include(CPack)
+
 # --------------------------------------------------------------
-#                       package 
+#                       package
 # --------------------------------------------------------------
 configure_file("cmake/${TARGET_NAME}.pc.in"
   "${PROJECT_BINARY_DIR}/pkgconfig/${TARGET_NAME}.pc" @ONLY)
@@ -193,7 +219,7 @@ install(FILES
   DESTINATION "${CMAKE_INSTALL_DATADIR}/pkgconfig"
 )
 
-install(FILES 
+install(FILES
   "${PROJECT_BINARY_DIR}/cmake/${TARGET_NAME}-config.cmake"
   "${PROJECT_BINARY_DIR}/cmake/${TARGET_NAME}-config-version.cmake"
   DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${TARGET_NAME}"
@@ -203,30 +229,30 @@ install(EXPORT ${TARGET_NAME}-targets
   DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${TARGET_NAME}"
 )
 
-# cyber .h files 
+# cyber .h files
 install(DIRECTORY cyber/
     DESTINATION include/cyber/
     FILES_MATCHING
     PATTERN "*.h"
 )
 
-# apollo conf 
+# apollo conf
 file(COPY cyber/conf/
   DESTINATION ${CMAKE_BINARY_DIR}/share/conf/
 )
-install(DIRECTORY ${CMAKE_BINARY_DIR}/share/conf/ 
+install(DIRECTORY ${CMAKE_BINARY_DIR}/share/conf/
   DESTINATION share/conf/
 )
 
-# setup.zsh 
-file(COPY setup.zsh setup.bash 
+# setup.zsh
+file(COPY setup.zsh setup.bash
   DESTINATION ${CMAKE_BINARY_DIR}
 )
 install(FILES ${CMAKE_BINARY_DIR}/setup.zsh ${CMAKE_BINARY_DIR}/setup.bash
-  DESTINATION . 
+  DESTINATION .
 )
 
-# cyber python api 
+# cyber python api
 file(COPY cyber/python/
   DESTINATION ${CMAKE_BINARY_DIR}/${CYBER_PYTHON_PATH}
 )
@@ -250,7 +276,7 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/${CYBER_PYTHON_PROTOBUF_PATH}/
   DESTINATION ${CYBER_PYTHON_PROTOBUF_PATH}
 )
 
-# install 
+# install
 install(TARGETS ${TARGET_NAME} mainboard
     EXPORT ${TARGET_NAME}-targets
     ARCHIVE DESTINATION lib
