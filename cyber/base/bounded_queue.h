@@ -109,9 +109,10 @@ bool BoundedQueue<T>::Init(uint64_t size, WaitStrategy* strategy) {
 template <typename T>
 bool BoundedQueue<T>::Enqueue(const T& element) {
   uint64_t new_tail = 0;
+  uint64_t old_tail = 0;
   uint64_t old_commit = 0;
-  uint64_t old_tail = tail_.load(std::memory_order_acquire);
   do {
+    old_tail = tail_.load(std::memory_order_acquire);
     new_tail = old_tail + 1;
     if (GetIndex(new_tail) == GetIndex(head_.load(std::memory_order_acquire))) {
       return false;
@@ -132,9 +133,10 @@ bool BoundedQueue<T>::Enqueue(const T& element) {
 template <typename T>
 bool BoundedQueue<T>::Enqueue(T&& element) {
   uint64_t new_tail = 0;
+  uint64_t old_tail = 0;
   uint64_t old_commit = 0;
-  uint64_t old_tail = tail_.load(std::memory_order_acquire);
   do {
+    old_tail = tail_.load(std::memory_order_acquire);
     new_tail = old_tail + 1;
     if (GetIndex(new_tail) == GetIndex(head_.load(std::memory_order_acquire))) {
       return false;
@@ -155,8 +157,9 @@ bool BoundedQueue<T>::Enqueue(T&& element) {
 template <typename T>
 bool BoundedQueue<T>::Dequeue(T* element) {
   uint64_t new_head = 0;
-  uint64_t old_head = head_.load(std::memory_order_acquire);
+  uint64_t old_head = 0;
   do {
+    old_head = head_.load(std::memory_order_acquire);
     new_head = old_head + 1;
     if (new_head == commit_.load(std::memory_order_acquire)) {
       return false;
