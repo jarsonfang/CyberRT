@@ -69,10 +69,7 @@ template <typename... Args>
 ObjectPool<T>::ObjectPool(uint32_t num_objects, Args &&... args)
     : num_objects_(num_objects) {
   const size_t size = sizeof(Node);
-  object_arena_ = static_cast<char *>(std::calloc(num_objects_, size));
-  if (object_arena_ == nullptr) {
-    throw std::bad_alloc();
-  }
+  object_arena_ = static_cast<char *>(CheckedCalloc(num_objects_, size));
 
   FOR_EACH(i, 0, num_objects_) {
     T *obj = new (object_arena_ + i * size) T(std::forward<Args>(args)...);
@@ -86,10 +83,7 @@ template <typename... Args>
 ObjectPool<T>::ObjectPool(uint32_t num_objects, InitFunc f, Args &&... args)
     : num_objects_(num_objects) {
   const size_t size = sizeof(Node);
-  object_arena_ = static_cast<char *>(std::calloc(num_objects_, size));
-  if (object_arena_ == nullptr) {
-    throw std::bad_alloc();
-  }
+  object_arena_ = static_cast<char *>(CheckedCalloc(num_objects_, size));
 
   FOR_EACH(i, 0, num_objects_) {
     T *obj = new (object_arena_ + i * size) T(std::forward<Args>(args)...);
@@ -107,6 +101,7 @@ ObjectPool<T>::~ObjectPool() {
       reinterpret_cast<Node *>(object_arena_ + i * size)->object.~T();
     }
     std::free(object_arena_);
+    object_arena_ = nullptr;
   }
 }
 

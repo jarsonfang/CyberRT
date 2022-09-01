@@ -78,44 +78,20 @@ CCObjectPool<T>::CCObjectPool(uint32_t size) : capacity_(size) {
 }
 
 template <typename T>
+CCObjectPool<T>::~CCObjectPool() {
+  if (node_arena_ != nullptr)
+  {
+    std::free(node_arena_);
+    node_arena_ = nullptr;
+  }
+}
+
+template <typename T>
 template <typename... Args>
 void CCObjectPool<T>::ConstructAll(Args &&... args) {
   FOR_EACH(i, 0, capacity_) {
     new (node_arena_ + i) T(std::forward<Args>(args)...);
   }
-}
-
-template <typename T>
-CCObjectPool<T>::~CCObjectPool() {
-  std::free(node_arena_);
-}
-
-template <typename T>
-bool CCObjectPool<T>::FindFreeHead(Head *head) {
-  Head new_head;
-  Head old_head = free_head_.load(std::memory_order_acquire);
-  do {
-    if (cyber_unlikely(old_head.node == nullptr)) {
-      return false;
-    }
-    new_head.node = old_head.node->next;
-    new_head.count = old_head.count + 1;
-  } while (!free_head_.compare_exchange_weak(old_head, new_head,
-                                             std::memory_order_acq_rel,
-                                             std::memory_order_acquire));
-  *head = old_head;
-  return true;
-}
-
-template <typename T>
-std::shared_ptr<T> CCObjectPool<T>::GetObject() {
-  Head free_head;
-  if (cyber_unlikely(!FindFreeHead(&free_head))) {
-    return nullptr;
-  }
-  auto self = this->shared_from_this();
-  return std::shared_ptr<T>(reinterpret_cast<T *>(free_head.node),
-                            [self](T *object) { self->ReleaseObject(object); });
 }
 
 template <typename T>
@@ -134,11 +110,41 @@ std::shared_ptr<T> CCObjectPool<T>::ConstructObject(Args &&... args) {
 }
 
 template <typename T>
+std::shared_ptr<T> CCObjectPool<T>::GetObject() {
+  Head free_head;
+  if (cyber_unlikely(!FindFreeHead(&free_head))) {
+    return nullptr;
+  }
+  auto self = this->shared_from_this();
+  return std::shared_ptr<T>(reinterpret_cast<T *>(free_head.node),
+                            [self](T *object) { self->ReleaseObject(object); });
+}
+
+template <typename T>
+bool CCObjectPool<T>::FindFreeHead(Head *head) {
+  Head new_head;
+  Head old_head;
+  do {
+    old_head = free_head_.load(std::memory_order_acquire);
+    if (cyber_unlikely(old_head.node == nullptr)) {
+      return false;
+    }
+    new_head.node = old_head.node->next;
+    new_head.count = old_head.count + 1;
+  } while (!free_head_.compare_exchange_weak(old_head, new_head,
+                                             std::memory_order_acq_rel,
+                                             std::memory_order_acquire));
+  *head = old_head;
+  return true;
+}
+
+template <typename T>
 void CCObjectPool<T>::ReleaseObject(T *object) {
+  Head old_head;
   Head new_head;
   Node *node = reinterpret_cast<Node *>(object);
-  Head old_head = free_head_.load(std::memory_order_acquire);
   do {
+    old_head = free_head_.load(std::memory_order_acquire);
     node->next = old_head.node;
     new_head.node = node;
     new_head.count = old_head.count + 1;
