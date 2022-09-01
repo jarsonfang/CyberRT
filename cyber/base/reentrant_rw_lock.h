@@ -68,9 +68,10 @@ inline void ReentrantRWLock::ReadLock() {
   }
 
   uint32_t retry_times = 0;
-  int32_t lock_num = lock_num_.load(std::memory_order_acquire);
+  int32_t lock_num = RW_LOCK_FREE;
   if (write_first_) {
     do {
+      lock_num = lock_num_.load(std::memory_order_acquire);
       while (lock_num < RW_LOCK_FREE ||
              write_lock_wait_num_.load(std::memory_order_acquire) > 0) {
         if (++retry_times == MAX_RETRY_TIMES) {
@@ -85,6 +86,7 @@ inline void ReentrantRWLock::ReadLock() {
                                               std::memory_order_relaxed));
   } else {
     do {
+      lock_num = lock_num_.load(std::memory_order_acquire);
       while (lock_num < RW_LOCK_FREE) {
         if (++retry_times == MAX_RETRY_TIMES) {
           // saving cpu

@@ -61,29 +61,32 @@ class AtomicRWLock {
 
 inline void AtomicRWLock::ReadLock() {
   uint32_t retry_times = 0;
-  int32_t lock_num = lock_num_.load();
+  int32_t lock_num = RW_LOCK_FREE;
   if (write_first_) {
     do {
-      while (lock_num < RW_LOCK_FREE || write_lock_wait_num_.load() > 0) {
+      lock_num = lock_num_.load(std::memory_order_acquire);
+      while (lock_num < RW_LOCK_FREE
+              || write_lock_wait_num_.load(std::memory_order_acquire) > 0) {
         if (++retry_times == MAX_RETRY_TIMES) {
           // saving cpu
           std::this_thread::yield();
           retry_times = 0;
         }
-        lock_num = lock_num_.load();
+        lock_num = lock_num_.load(std::memory_order_acquire);
       }
     } while (!lock_num_.compare_exchange_weak(lock_num, lock_num + 1,
                                               std::memory_order_acq_rel,
                                               std::memory_order_relaxed));
   } else {
     do {
+      lock_num = lock_num_.load(std::memory_order_acquire);
       while (lock_num < RW_LOCK_FREE) {
         if (++retry_times == MAX_RETRY_TIMES) {
           // saving cpu
           std::this_thread::yield();
           retry_times = 0;
         }
-        lock_num = lock_num_.load();
+        lock_num = lock_num_.load(std::memory_order_acquire);
       }
     } while (!lock_num_.compare_exchange_weak(lock_num, lock_num + 1,
                                               std::memory_order_acq_rel,
