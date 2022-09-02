@@ -44,9 +44,10 @@ class UnboundedQueue {
   void Enqueue(const T& element) {
     auto node = new Node();
     node->data = element;
-    Node* old_tail = tail_.load();
+    Node* old_tail = nullptr;
 
     while (true) {
+      old_tail = tail_.load();
       if (tail_.compare_exchange_strong(old_tail, node)) {
         old_tail->next = node;
         old_tail->release();
@@ -57,15 +58,17 @@ class UnboundedQueue {
   }
 
   bool Dequeue(T* element) {
-    Node* old_head = head_.load();
+    Node* old_head = nullptr;
     Node* head_next = nullptr;
     do {
+      old_head = head_.load();
       head_next = old_head->next;
 
       if (head_next == nullptr) {
         return false;
       }
     } while (!head_.compare_exchange_strong(old_head, head_next));
+
     *element = head_next->data;
     size_.fetch_sub(1);
     old_head->release();
