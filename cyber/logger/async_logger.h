@@ -139,26 +139,29 @@ class AsyncLogger : public google::base::Logger {
     Msg() : ts(0), message(), level(google::INFO) {}
     Msg(time_t ts, std::string&& message, int32_t level)
         : ts(ts), message(std::move(message)), level(level) {}
-    Msg(const Msg& rsh) {
-      ts = rsh.ts;
-      message = rsh.message;
-      level = rsh.level;
+    Msg(const Msg& rhs)
+        : ts(rhs.ts),
+          message(rhs.message),
+          level(rhs.level)
+    {
     }
-    Msg(Msg&& rsh) {
-      ts = rsh.ts;
-      message = rsh.message;
-      level = rsh.level;
+
+    Msg(Msg&& rhs)
+        : ts(rhs.ts),
+          message(std::move(rhs.message)),
+          level(rhs.level)
+    {
     }
-    Msg& operator=(Msg&& rsh) {
-      ts = rsh.ts;
-      message = std::move(rsh.message);
-      level = rsh.level;
+    Msg& operator=(Msg&& rhs) {
+      ts = rhs.ts;
+      message = std::move(rhs.message);
+      level = rhs.level;
       return *this;
     }
-    Msg& operator=(const Msg& rsh) {
-      ts = rsh.ts;
-      message = rsh.message;
-      level = rsh.level;
+    Msg& operator=(const Msg& rhs) {
+      ts = rhs.ts;
+      message = rhs.message;
+      level = rhs.level;
       return *this;
     }
   };
